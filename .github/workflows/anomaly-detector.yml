@@ -1,0 +1,39 @@
+name: Anomaly Detector Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        working-directory: anomaly-detector/backend
+        run: pip install -r requirements.txt
+      - name: Run tests
+        working-directory: anomaly-detector/backend
+        run: python -m pytest tests -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: anomaly-detector/frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: anomaly-detector/frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: anomaly-detector/frontend
+        run: npm run build
+      - name: Test upload client
+        working-directory: anomaly-detector/frontend
+        run: npm test

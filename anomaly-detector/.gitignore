@@ -1,0 +1,13 @@
+.venv/
+node_modules/
+.npm-cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+dist/
+.env
+.env.local
+
+.claude/
+backend/.data/

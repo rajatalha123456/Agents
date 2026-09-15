@@ -1,0 +1,35 @@
+services:
+  api:
+    build:
+      context: ./backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      MIZAN_ALLOWED_ORIGINS: http://localhost:8080
+    ports:
+      - "8000:8000"
+    volumes:
+      - anomaly-data:/app/.data
+
+  worker:
+    build:
+      context: ./backend
+    command: ["python", "-m", "app.large_data"]
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - anomaly-data:/app/.data
+
+  web:
+    build:
+      context: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  anomaly-data:
