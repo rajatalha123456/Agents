@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:${RISK_PORT:-8018}:8000"
+    env_file: .env
+    environment:
+      RISK_DATA_DIR: /app/runtime
+    volumes:
+      - risk_data:/app/runtime
+    restart: unless-stopped
+volumes:
+  risk_data:

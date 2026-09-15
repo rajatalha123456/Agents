@@ -1,0 +1,10 @@
+.env
+.venv
+.git
+runtime
+__pycache__
+.pytest_cache
+test-results
+.vendor
+**/__pycache__
+**/*.pyc
