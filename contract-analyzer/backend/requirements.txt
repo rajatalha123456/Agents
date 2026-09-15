@@ -3,4 +3,6 @@ pydantic
 pymupdf
 python-docx
 python-dotenv
-flask
+fastapi
+uvicorn[standard]
+python-multipart
