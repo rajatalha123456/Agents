@@ -1,0 +1,160 @@
+# Core pack — the default, domain-agnostic rule pack.
+# Always installed (core/packs/conflicts.py::CORE_PACK_ID), never uninstalled.
+# Every other pack (e.g. Islamic Finance / Mizan, §30) is validated against
+# this one for break-code and dimension-key collisions before it can install.
+pack:
+  id: core
+  name: Core Reconciliation Pack
+  version: 1.0.0
+  engine_compat: ">=1.0.0 <2.0.0"
+  vendor: Novu Labs
+  description: Domain-agnostic default break taxonomy, roles and tolerance baseline (Build Plan v3 §10).
+
+# Core ships no isolating/domain dimensions of its own — that's what packs
+# are for (EP-01). Dimension MECHANISM lives in core code; definitions do not.
+dimensions: []
+
+# §18.1 — core roles. A pack may add more (e.g. Mizan's Shariah Secretariat)
+# but may never remove or redefine these.
+roles:
+  - code: VIEWER
+    label: Viewer
+    can_approve: []
+    cannot: [ALL_DECISIONS]
+  - code: MAKER
+    label: Preparer / Maker
+    can_approve: []
+    cannot: [APPROVE_OWN_WORK]
+  - code: CHECKER
+    label: Reviewer / Checker
+    can_approve: [TIM, AMT, REF, DUP, CLS, DAT]
+    cannot: [APPROVE_OWN_WORK]
+  - code: CERTIFIER
+    label: Controller / Certifier
+    can_approve: [TIM, AMT, REF, DUP, CLS, DAT]
+    cannot: [POST]
+  - code: AUDITOR
+    label: Auditor
+    can_approve: []
+    cannot: [ALL_OPERATIONAL_ACTIONS]
+  - code: ADMIN
+    label: Admin
+    can_approve: []
+    cannot: [ALL_FINANCIAL_DECISIONS]
+
+# No opinionated universes ship with core — universe DEFINITIONS are always
+# pack/tenant data (EP-08), created via POST /v1/universes or a pack manifest.
+universes: []
+
+# §10 — 48 core break codes, 6 families. Every code below is `is_sensitive:
+# false`; packs mark their own codes sensitive (EP-03) where it matters
+# (e.g. every Mizan SHA code, §30.2).
+break_types:
+  # TIM — timing and cut-off
+  - { code: TIM-01, family: TIM, label: "Credit in transit past value-date cut-off", risk_weight: 2 }
+  - { code: TIM-02, family: TIM, label: "Debit in transit / uncleared payment", risk_weight: 2 }
+  - { code: TIM-03, family: TIM, label: "Posted after source system EOD import snapshot", risk_weight: 3 }
+  - { code: TIM-04, family: TIM, label: "Calendar mismatch (holiday/weekend) between sides", risk_weight: 2 }
+  - { code: TIM-05, family: TIM, label: "Backdated value date crosses a sealed period", risk_weight: 8 }
+  - { code: TIM-06, family: TIM, label: "Accrual recognised in different periods on each side", risk_weight: 5 }
+  - { code: TIM-07, family: TIM, label: "Payment file released, settlement confirmation missing", risk_weight: 6 }
+  - { code: TIM-08, family: TIM, label: "Timezone offset causes day-shift on cross-border feed", risk_weight: 4 }
+
+  # AMT — amount, FX and rounding
+  - { code: AMT-01, family: AMT, label: "Amount mismatch within tolerance", risk_weight: 1 }
+  - { code: AMT-02, family: AMT, label: "Amount mismatch outside tolerance", risk_weight: 6 }
+  - { code: AMT-03, family: AMT, label: "Rounding residual not routed to designated account", risk_weight: 4 }
+  - { code: AMT-04, family: AMT, label: "FX rate difference between feed and base currency", risk_weight: 4 }
+  - { code: AMT-05, family: AMT, label: "Bank charge netted against gross receipt", risk_weight: 3 }
+  - { code: AMT-06, family: AMT, label: "Partial settlement against one ledger entry", risk_weight: 4 }
+  - { code: AMT-07, family: AMT, label: "Aggregated credit against multiple ledger lines (N:1)", risk_weight: 3 }
+  - { code: AMT-08, family: AMT, label: "Sign/direction reversal — debit booked as credit or vice versa", risk_weight: 7 }
+
+  # REF — reference and identity
+  - { code: REF-01, family: REF, label: "Structured reference missing, only free-text narrative", risk_weight: 3 }
+  - { code: REF-02, family: REF, label: "Counterparty reference invalid or unregistered", risk_weight: 5 }
+  - { code: REF-03, family: REF, label: "Reference belongs to a different account/entity", risk_weight: 7 }
+  - { code: REF-04, family: REF, label: "Mandate / IBAN does not match master data", risk_weight: 6 }
+  - { code: REF-05, family: REF, label: "Reference truncated by payment rail", risk_weight: 3 }
+  - { code: REF-06, family: REF, label: "Document/invoice reference not found in source system", risk_weight: 5 }
+  - { code: REF-07, family: REF, label: "Journal batch reference missing on GL side", risk_weight: 4 }
+  - { code: REF-08, family: REF, label: "Entity resolution ambiguous — multiple master matches", risk_weight: 4 }
+
+  # DUP — duplication and omission
+  - { code: DUP-01, family: DUP, label: "Duplicate line on same side (fingerprint match)", risk_weight: 6 }
+  - { code: DUP-02, family: DUP, label: "Duplicate from re-run import", risk_weight: 5 }
+  - { code: DUP-03, family: DUP, label: "Movement on side A, no entry on side B", risk_weight: 6 }
+  - { code: DUP-04, family: DUP, label: "Entry on side B, no movement on side A", risk_weight: 6 }
+  - { code: DUP-05, family: DUP, label: "Returned/re-presented collection collected again", risk_weight: 7 }
+  - { code: DUP-06, family: DUP, label: "File reprocessed — control total matches, checksum differs", risk_weight: 6 }
+  - { code: DUP-07, family: DUP, label: "Reversal posted, original not found", risk_weight: 7 }
+  - { code: DUP-08, family: DUP, label: "Original reversed twice", risk_weight: 8 }
+
+  # CLS — classification and GL
+  - { code: CLS-01, family: CLS, label: "Account mapping missing", risk_weight: 5 }
+  - { code: CLS-02, family: CLS, label: "Posted to suspense/clearing, no disposition", risk_weight: 6 }
+  - { code: CLS-03, family: CLS, label: "Expense not in approved taxonomy", risk_weight: 5 }
+  - { code: CLS-04, family: CLS, label: "Income mapped to wrong account", risk_weight: 5 }
+  - { code: CLS-05, family: CLS, label: "Control account variance — subledger vs GL", risk_weight: 8 }
+  - { code: CLS-06, family: CLS, label: "Reserve movement without approved appropriation reference", risk_weight: 7 }
+  - { code: CLS-07, family: CLS, label: "Provision/write-off without linked approval", risk_weight: 8 }
+  - { code: CLS-08, family: CLS, label: "Suspense ageing threshold exceeded", risk_weight: 6 }
+
+  # DAT — data quality and ingestion
+  - { code: DAT-01, family: DAT, label: "Required field missing", risk_weight: 4 }
+  - { code: DAT-02, family: DAT, label: "Unparseable date", risk_weight: 4 }
+  - { code: DAT-03, family: DAT, label: "Invalid or unknown currency code", risk_weight: 5 }
+  - { code: DAT-04, family: DAT, label: "Control total mismatch between file and parsed rows", risk_weight: 8 }
+  - { code: DAT-05, family: DAT, label: "Encoding / character corruption detected", risk_weight: 3 }
+  - { code: DAT-06, family: DAT, label: "Connector feed did not arrive in expected window", risk_weight: 7 }
+  - { code: DAT-07, family: DAT, label: "Candidate explosion — blocking key too loose", risk_weight: 4 }
+  - { code: DAT-08, family: DAT, label: "Schema drift — source added/removed/renamed a column", risk_weight: 6 }
+
+# Generic default tolerance baseline; tenants/packs override via their own
+# tolerance_profile rows (§32 — tolerance changes require maker-checker).
+tolerances:
+  - profile: standard
+    rules:
+      - { field: value_date, type: day_window, value: 2 }
+      - { field: amount, type: absolute_or_percent, absolute: 1.00, percent: 0.001 }
+
+# EP-04 baseline routing: every family goes to the generic CHECKER role
+# core already defines (§18.1), since core ships no specialist roles of
+# its own. A pack (e.g. Mizan) overrides/adds rules for its own families —
+# most notably a hard `allow_auto_match: false` for sensitive ones (§5.3,
+# §30.1) — but core itself has no family that needs forcing away from
+# auto-match by default. The one exception here is amount escalation: a
+# large AMT break routes to the Controller/Certifier role instead of the
+# generic Checker, since §5.1's own example uses exactly this shape.
+routing:
+  - when: { family: TIM }
+    require_role: CHECKER
+    allow_auto_match: true
+  - when: { family: AMT }
+    require_role: CHECKER
+    allow_auto_match: true
+  - when: { family: AMT, amount_gte: 1000000 }
+    require_role: CERTIFIER
+    allow_auto_match: true
+    escalate_to: CERTIFIER
+  - when: { family: REF }
+    require_role: CHECKER
+    allow_auto_match: true
+  - when: { family: DUP }
+    require_role: CHECKER
+    allow_auto_match: true
+  - when: { family: CLS }
+    require_role: CHECKER
+    allow_auto_match: true
+  - when: { family: DAT }
+    require_role: CHECKER
+    allow_auto_match: true
+
+# Core defines no knowledge namespace of its own; each pack namespaces its
+# own corpus (EP-06).
+knowledge: null
+
+journal_templates: []
+validators: []
+events:
+  emit: []
