@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+.env
+
+keys/*.pem
+keys/*.key
+
+data/audit.jsonl
+data/*.jsonl
+
+.vscode/
+.idea/

@@ -1,0 +1,46 @@
+{
+  "signed_run": {
+    "run_id": "GOLDEN-0014",
+    "payload": {
+      "account_id": "ACC-1013",
+      "account_name": "Bob Smith",
+      "currency": "AED",
+      "period_start": "2026-06-01",
+      "period_end": "2026-06-30",
+      "nav": 3250750.1,
+      "opening_balance": 3000000.0,
+      "closing_balance": 3250750.1,
+      "return_percent": 8.36,
+      "allocation": [
+        {
+          "category": "Equities",
+          "weight_percent": 40.0
+        },
+        {
+          "category": "Real Estate",
+          "weight_percent": 35.0
+        },
+        {
+          "category": "Cash",
+          "weight_percent": 25.0
+        }
+      ],
+      "fees": [
+        {
+          "name": "Management Fee",
+          "amount": 500.0,
+          "currency": "AED"
+        },
+        {
+          "name": "Custody Fee",
+          "amount": 75.25,
+          "currency": "AED"
+        }
+      ]
+    },
+    "signature": "+3xN8qekKlEXJTz8hhgZz9PfQ3hk0osW3kxt5xH7/aZH8llmhBELB0G2g6DS9MBvTgw2NZcSCb6jAntnzRuDDw==",
+    "signature_algorithm": "Ed25519",
+    "signed_at": "2026-09-09T11:02:45.087053Z"
+  },
+  "language": "ur"
+}

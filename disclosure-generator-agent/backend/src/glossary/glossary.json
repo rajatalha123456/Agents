@@ -1,0 +1,21 @@
+{
+  "_note": "Single source of truth for disclosure terminology. Review with a native Urdu/Arabic speaker before production use. This is a conventional (non-Shariah) glossary by default — do not add sukuk/profit-sharing framing unless the product is explicitly configured as Shariah-compliant.",
+  "product_type": "conventional",
+  "terms": {
+    "disclosure": { "en": "Disclosure", "ur": "انکشاف نامہ", "ar": "إفصاح" },
+    "account": { "en": "Account", "ur": "اکاؤنٹ", "ar": "الحساب" },
+    "account_holder": { "en": "Account Holder", "ur": "کھاتہ دار", "ar": "صاحب الحساب" },
+    "reporting_period": { "en": "Reporting Period", "ur": "رپورٹنگ مدت", "ar": "الفترة المشمولة بالتقرير" },
+    "net_asset_value": { "en": "Net Asset Value (NAV)", "ur": "خالص اثاثہ جاتی قدر (NAV)", "ar": "صافي قيمة الأصول" },
+    "opening_balance": { "en": "Opening Balance", "ur": "ابتدائی بیلنس", "ar": "الرصيد الافتتاحي" },
+    "closing_balance": { "en": "Closing Balance", "ur": "اختتامی بیلنس", "ar": "الرصيد الختامي" },
+    "return": { "en": "Return", "ur": "منافع", "ar": "العائد" },
+    "allocation": { "en": "Asset Allocation", "ur": "اثاثہ جات کی تقسیم", "ar": "توزيع الأصول" },
+    "fees": { "en": "Fees", "ur": "فیس", "ar": "الرسوم" },
+    "currency": { "en": "Currency", "ur": "کرنسی", "ar": "العملة" },
+    "period_start": { "en": "Period Start", "ur": "مدت کا آغاز", "ar": "بداية الفترة" },
+    "period_end": { "en": "Period End", "ur": "مدت کا اختتام", "ar": "نهاية الفترة" },
+    "category": { "en": "Category", "ur": "زمرہ", "ar": "الفئة" },
+    "weight_percent": { "en": "Weight", "ur": "تناسب", "ar": "النسبة" }
+  }
+}

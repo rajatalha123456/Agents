@@ -1,0 +1,37 @@
+{
+  "signed_run": {
+    "run_id": "GOLDEN-0006",
+    "payload": {
+      "account_id": "ACC-1005",
+      "account_name": "Jane Doe",
+      "currency": "USD",
+      "period_start": "2026-06-01",
+      "period_end": "2026-06-30",
+      "nav": 1050000.75,
+      "opening_balance": 1000000.0,
+      "closing_balance": 1050000.75,
+      "return_percent": 5.0,
+      "allocation": [
+        {
+          "category": "Equities",
+          "weight_percent": 60.0
+        },
+        {
+          "category": "Fixed Income",
+          "weight_percent": 40.0
+        }
+      ],
+      "fees": [
+        {
+          "name": "Management Fee",
+          "amount": 250.5,
+          "currency": "USD"
+        }
+      ]
+    },
+    "signature": "0/rQbqv2UBwkcES8zcs6HNQ7a7I5zJQe81ciTu4FlQ5Ci+iVsy5VtWVFNR7d70Q5L2QDn5GFYN1eUBlzLLWJBA==",
+    "signature_algorithm": "Ed25519",
+    "signed_at": "2026-09-09T11:02:45.070902Z"
+  },
+  "language": "ar"
+}
