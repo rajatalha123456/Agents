@@ -1,0 +1,82 @@
+pack_id: payments
+pack_version: "1.3.0"
+rules:
+  - rule_id: single_approval_authority_breach
+    description: Payment approved by a single approver above the dual-approval threshold
+    expression: "(amount > 50000) and (approver_count < 2)"
+    severity: critical
+    owner: controls-team
+    explanation: >
+      Payments above the dual-approval threshold require two independent
+      approvers. A single approver on a large payment bypasses a key
+      segregation-of-duties control.
+    effective_from: "2024-01-01"
+    required_columns: [amount, approver_count]
+
+  - rule_id: posting_outside_processing_hours
+    description: Payment posted outside normal processing hours
+    expression: "(posting_hour < 6) or (posting_hour > 20)"
+    severity: medium
+    owner: controls-team
+    explanation: >
+      Transactions posted outside normal business hours warrant review for
+      unauthorized or automated activity.
+    effective_from: "2024-01-01"
+    required_columns: [posting_hour]
+
+  - rule_id: material_payment_to_new_vendor
+    description: Material payment to a vendor with no prior payment history
+    expression: "(amount > 25000) and (vendor_is_new == 1)"
+    severity: critical
+    owner: vendor-master-team
+    explanation: >
+      Large first-time payments to a newly created vendor are a common
+      fraud pattern (fictitious vendor schemes) and warrant verification of
+      vendor legitimacy.
+    effective_from: "2024-01-01"
+    required_columns: [amount, vendor_is_new]
+
+  - rule_id: amount_clustered_below_approval_threshold
+    description: Payment amount just below an approval threshold
+    expression: "(amount >= 49000) and (amount < 50000)"
+    severity: high
+    owner: controls-team
+    explanation: >
+      Amounts clustered just below an approval threshold can indicate
+      structuring to avoid a required approval step.
+    effective_from: "2024-01-01"
+    required_columns: [amount]
+
+  - rule_id: round_amount
+    description: Payment amount is a round number
+    expression: "(amount % 1000) == 0"
+    severity: low
+    owner: analytics-team
+    explanation: >
+      Round-dollar amounts are more common in manually keyed or fictitious
+      transactions than in system-generated ones.
+    effective_from: "2024-01-01"
+    required_columns: [amount]
+
+  - rule_id: high_velocity_vendor
+    description: Vendor has an unusually high transaction velocity
+    expression: "vendor_transaction_count_30d > 20"
+    severity: medium
+    owner: analytics-team
+    explanation: >
+      An abnormal spike in transaction count for a vendor can indicate
+      invoice splitting or a compromised vendor master record.
+    effective_from: "2024-01-01"
+    required_columns: [vendor_transaction_count_30d]
+
+  - rule_id: single_approval_authority_breach_legacy
+    description: (Superseded) Payment approved by a single approver above $25,000
+    expression: "(amount > 25000) and (approver_count < 2)"
+    severity: high
+    owner: controls-team
+    explanation: >
+      Superseded by single_approval_authority_breach when the dual-approval
+      threshold was raised to $50,000.
+    effective_from: "2022-01-01"
+    effective_to: "2023-12-31"
+    required_columns: [amount, approver_count]

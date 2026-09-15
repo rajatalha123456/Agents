@@ -1,0 +1,33 @@
+[project]
+name = "audit-sampling-agent"
+version = "0.1.0"
+description = "ISA 530 statistical sampling and risk-based selection engine"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--basetemp=.pytest_tmp"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+# A pragmatic subset for a codebase this size: real bugs and import
+# hygiene (E, F, I, UP), not every stylistic opinion ruff ships with.
+select = ["E", "F", "I", "UP"]
+ignore = [
+    "E501",  # line length is advisory here; long docstrings/URLs are common
+    "UP042",  # str+Enum vs StrEnum: selection.py is frozen (section 0.1); not a style choice to revisit
+    "UP046",  # Generic[T] vs PEP 695 type params: cosmetic, not worth the churn here
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["sampling*"]

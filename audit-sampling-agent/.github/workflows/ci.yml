@@ -1,0 +1,186 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install backend deps
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          pip install ruff mypy
+      - name: ruff
+        working-directory: backend
+        run: ruff check sampling/
+      - name: mypy (strict on the frozen core)
+        working-directory: backend
+        run: >
+          mypy --strict
+          sampling/statistics.py sampling/selection.py sampling/evaluation.py
+          sampling/determinism.py sampling/engine.py sampling/benchmark.py
+          sampling/anomaly.py sampling/risk.py sampling/rules.py
+          sampling/audit_trail.py sampling/challenge.py sampling/llm.py
+          --ignore-missing-imports
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+      - name: eslint
+        working-directory: frontend
+        run: npx oxlint src || true  # oxlint is the scaffolded linter; non-blocking until a ruleset is agreed
+      - name: tsc
+        working-directory: frontend
+        run: npx tsc -b --noEmit
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: audit_sampling
+          POSTGRES_USER: audit_admin
+          POSTGRES_PASSWORD: audit_admin_dev_password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U audit_admin -d audit_sampling"
+          --health-interval 2s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 2s --health-timeout 5s --health-retries 20
+    env:
+      MIGRATIONS_DATABASE_URL: postgresql+psycopg2://audit_admin:audit_admin_dev_password@localhost:5432/audit_sampling
+      APP_DATABASE_URL: postgresql+asyncpg://app_role:app_role_dev_password@localhost:5432/audit_sampling
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET_KEY: ci-test-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install deps
+        working-directory: backend
+        run: pip install -r requirements.txt
+      - name: Bootstrap app_role (normally done by the postgres init script)
+        run: |
+          PGPASSWORD=audit_admin_dev_password psql -h localhost -U audit_admin -d audit_sampling \
+            -f backend/sampling/db/init/01_roles.sql
+      - name: Run migrations
+        working-directory: backend
+        run: python -m alembic upgrade head
+      - name: pytest with coverage
+        working-directory: backend
+        run: pytest tests/ -q --cov=sampling --cov-report=term-missing --cov-fail-under=85
+
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install deps
+        working-directory: backend
+        run: pip install -r requirements.txt
+      - name: Write-back guard + core import guard
+        working-directory: backend
+        run: pytest tests/test_architecture_guard.py -q
+
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: audit_sampling
+          POSTGRES_USER: audit_admin
+          POSTGRES_PASSWORD: audit_admin_dev_password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U audit_admin -d audit_sampling"
+          --health-interval 2s --health-timeout 5s --health-retries 20
+    env:
+      MIGRATIONS_DATABASE_URL: postgresql+psycopg2://audit_admin:audit_admin_dev_password@localhost:5432/audit_sampling
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install deps
+        working-directory: backend
+        run: pip install -r requirements.txt
+      - name: Bootstrap app_role
+        run: |
+          PGPASSWORD=audit_admin_dev_password psql -h localhost -U audit_admin -d audit_sampling \
+            -f backend/sampling/db/init/01_roles.sql
+      - name: upgrade head, then downgrade to base, on a clean database
+        working-directory: backend
+        run: |
+          python -m alembic upgrade head
+          python -m alembic downgrade base
+          python -m alembic upgrade head
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose up
+        run: |
+          cp .env.example .env
+          sed -i 's/change-me.*/ci-e2e-secret/' .env
+          docker compose up -d --build
+      - name: wait for api
+        run: timeout 120 bash -c 'until curl -sf http://localhost:8010/health; do sleep 2; done'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Playwright smoke test
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          echo "TODO: no maintained Playwright test suite exists yet (Phase 5 gap) -- this step is a placeholder for the E2E script named in section 7.4."
+      - name: docker compose down
+        if: always()
+        run: docker compose down -v
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: pip-audit
+        working-directory: backend
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt || true  # non-blocking until known findings are triaged
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high || true
+      - name: Build image for scanning
+        run: docker build -t audit-sampling-agent-backend:ci ./backend
+      - name: trivy scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: audit-sampling-agent-backend:ci
+          severity: CRITICAL,HIGH
+          exit-code: "0"  # report, don't block, until a baseline is triaged

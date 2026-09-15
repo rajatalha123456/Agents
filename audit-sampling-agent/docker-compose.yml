@@ -1,0 +1,92 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: audit_sampling
+      POSTGRES_USER: audit_admin
+      POSTGRES_PASSWORD: audit_admin_dev_password
+    ports:
+      - "55433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/sampling/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U audit_admin -d audit_sampling"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7
+    ports:
+      - "16379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: applies migrations then exits. api/worker wait for it to
+  # succeed rather than racing it, so a fresh `docker-compose up` on an
+  # empty volume always has a migrated schema before anything queries it.
+  migrate:
+    build: ./backend
+    entrypoint: ["python", "-m", "alembic", "upgrade", "head"]
+    environment:
+      MIGRATIONS_DATABASE_URL: postgresql+psycopg2://audit_admin:audit_admin_dev_password@postgres:5432/audit_sampling
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: ./backend
+    ports:
+      - "8010:8000"
+    environment:
+      APP_DATABASE_URL: postgresql+asyncpg://app_role:app_role_dev_password@postgres:5432/audit_sampling
+      REDIS_URL: redis://redis:6379
+      ALLOWED_ORIGINS: http://localhost:5183
+      DATASET_STORAGE_ROOT: /data/uploads
+    volumes:
+      - dataset_uploads:/data/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  # ARQ runs cron jobs (the nightly audit anchor, the stale-run reaper) in
+  # the same worker process as regular job execution -- unlike Celery,
+  # ARQ needs no separate "beat"/scheduler process, so there is
+  # deliberately no third worker-family service here.
+  worker:
+    build: ./backend
+    entrypoint: ["python", "-m", "arq", "sampling.jobs.worker.WorkerSettings"]
+    environment:
+      APP_DATABASE_URL: postgresql+asyncpg://app_role:app_role_dev_password@postgres:5432/audit_sampling
+      REDIS_URL: redis://redis:6379
+      DATASET_STORAGE_ROOT: /data/uploads
+    volumes:
+      - dataset_uploads:/data/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8010
+    ports:
+      - "5183:8080"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+  dataset_uploads:
