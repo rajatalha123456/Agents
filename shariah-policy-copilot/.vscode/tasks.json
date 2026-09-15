@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Check Git State",
+			"type": "shell",
+			"command": "git status --short && git branch --show-current && git remote -v",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

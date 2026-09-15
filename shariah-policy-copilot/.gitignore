@@ -1,0 +1,15 @@
+venv/
+.env
+__pycache__/
+*.py[cod]
+*.log
+backend/data/copilot.db
+backend/data/vector_store/
+backend/data/raw_documents/*
+!backend/data/raw_documents/.gitkeep
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+node_modules/
+dist/
